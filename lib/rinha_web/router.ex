@@ -7,6 +7,8 @@ defmodule RinhaWeb.Router do
 
   scope "/api", RinhaWeb do
     pipe_through :api
+
+    resources "/users", UserController
   end
 
   # Enable LiveDashboard in development
