@@ -33,17 +33,44 @@ jobs:
           path: |
             deps
             _build
-            priv/plts
           key: |
             mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      - name: Restore PLT cache
+        id: plt_cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            priv/plts
+          key: |
+            plt-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            plt-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
 
       - name: Install mix dependencies and compile
         run: mix do deps.get, compile --warnings-as-errors --all-warnings
 
       - name: Unlock unused dependecies
         run: mix deps.unlock --check-unused
+
+      # Create PLTs if no cache was found
+      - name: Create PLTs
+        if: steps.plt_cache.outputs.cache-hit != 'true'
+        run: mix dialyzer --plt
+
+      # By default, the GitHub Cache action will only save the cache if all steps in the job succeed,
+      # so we separate the cache restore and save steps in case running dialyzer fails.
+      - name: Save PLT cache
+        id: plt_cache_save
+        uses: actions/cache/save@v3
+        if: steps.plt_cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            priv/plts
+          key: |
+            plt-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
 
   static-code-analysis:
     needs: dependencies
@@ -72,11 +99,21 @@ jobs:
           path: |
             deps
             _build
-            priv/plts
           key: |
             mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      - name: Restore PLT cache
+        id: plt_cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            priv/plts
+          key: |
+            plt-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            plt-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
 
       - name: Check formatting
         run: mix format --check-formatted
