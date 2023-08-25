@@ -7,9 +7,9 @@ on:
       - main
 
 jobs:
-  test:
+  dependencies:
     runs-on: ubuntu-20.04
-    name: Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
+    name: Dependencies - Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
     env:
       MIX_ENV: test
     strategy:
@@ -43,6 +43,37 @@ jobs:
       - name: Unlock unused dependecies
         run: mix deps.unlock --check-unused
 
+  static-code-analysis:
+    needs: dependencies
+    runs-on: ubuntu-20.04
+    name: Static Code Analysis - Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
+    env:
+      MIX_ENV: test
+    strategy:
+      matrix:
+        include:
+          - elixir: 1.15.4
+            otp: 26.0.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.3
+
+      - name: Setup Elixir/OTP
+        uses: erlef/setup-beam@v1.16.0
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Cache
+        uses: actions/cache@v1.2.1
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ matrix.elixir }}-${{ matrix.otp }}-
+
       - name: Check formatting
         run: mix format --check-formatted
 
@@ -51,3 +82,54 @@ jobs:
 
       - name: Check sobelow
         run: mix sobelow -i Config.HTTPS
+
+  test:
+    services:
+      db:
+        image: postgres:14
+        ports: ['5432:5432']
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    needs: static-code-analysis
+    runs-on: ubuntu-20.04
+    name: Tests - Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
+    env:
+      MIX_ENV: test
+    strategy:
+      matrix:
+        include:
+          - elixir: 1.15.4
+            otp: 26.0.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.3
+
+      - name: Setup Elixir/OTP
+        uses: erlef/setup-beam@v1.16.0
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Cache
+        uses: actions/cache@v1.2.1
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      - name: Run tests
+        run: mix coveralls.lcov
+
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v2
+        with:
+          files: cover/lcov.info
