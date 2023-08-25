@@ -21,7 +21,12 @@ defmodule Rinha.AccountsTest do
     end
 
     test "create_user/1 with valid data creates a user" do
-      valid_attrs = %{apelido: "some apelido", nascimento: ~D[2023-08-24], nome: "some nome", stack: ["option1", "option2"]}
+      valid_attrs = %{
+        apelido: "some apelido",
+        nascimento: ~D[2023-08-24],
+        nome: "some nome",
+        stack: ["option1", "option2"]
+      }
 
       assert {:ok, %User{} = user} = Accounts.create_user(valid_attrs)
       assert user.apelido == "some apelido"
@@ -36,7 +41,13 @@ defmodule Rinha.AccountsTest do
 
     test "update_user/2 with valid data updates the user" do
       user = user_fixture()
-      update_attrs = %{apelido: "some updated apelido", nascimento: ~D[2023-08-25], nome: "some updated nome", stack: ["option1"]}
+
+      update_attrs = %{
+        apelido: "some updated apelido",
+        nascimento: ~D[2023-08-25],
+        nome: "some updated nome",
+        stack: ["option1"]
+      }
 
       assert {:ok, %User{} = user} = Accounts.update_user(user, update_attrs)
       assert user.apelido == "some updated apelido"
