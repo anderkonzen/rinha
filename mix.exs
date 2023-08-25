@@ -16,6 +16,16 @@ defmodule Rinha.MixProject do
         "coveralls.detail": :test,
         "coveralls.lcov": :test,
         "coveralls.html": :test
+      ],
+      dialyzer: [
+        # Put the project-level PLT in the priv/ directory (instead of the default _build/ location)
+        plt_file: {:no_warn, "priv/plts/project.plt"}
+
+        # The above is equivalent to:
+        # plt_local_path: "priv/plts/project.plt"
+
+        # You could also put the core Erlang/Elixir PLT into the priv/ directory like so:
+        # plt_core_path: "priv/plts/core.plt"
       ]
     ]
   end
@@ -50,7 +60,8 @@ defmodule Rinha.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
-      {:excoveralls, "~> 0.17", only: :test}
+      {:dialyxir, "~> 1.3", only: [:dev], runtime: false},
+      {:excoveralls, "~> 0.17", only: :test, runtime: false}
     ]
   end
 
