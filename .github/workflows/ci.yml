@@ -38,6 +38,11 @@ jobs:
           restore-keys: |
             mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
 
+      - name: Hex and Rebar
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+
       - name: Install mix dependencies and compile
         run: mix do deps.get, compile --warnings-as-errors --all-warnings
 
